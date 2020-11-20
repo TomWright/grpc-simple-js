@@ -38,7 +38,7 @@ type requiredImport struct {
 
 var importsTemplate = template.Must(template.New("imports").
 	Funcs(defaultFuncMap.toMap()).
-	Parse(`{{ range . }}
+	Parse(`{{ range . -}}
 import * as {{ .ImportName }} from '{{ .RelativePath }}'
 {{ end }}
 

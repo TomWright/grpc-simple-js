@@ -1,10 +1,8 @@
 package internal
 
 import (
-	"fmt"
 	"github.com/tomwright/grpc-simple-js/internal/mapping"
 	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"text/template"
 )
 
@@ -30,21 +28,5 @@ func (fm *funcMap) fieldName(field *protogen.Field) string {
 }
 
 func (fm *funcMap) fieldType(field *protogen.Field) string {
-	var result string
-	switch field.Desc.Kind() {
-	case protoreflect.MessageKind:
-		message := field.Desc.Message()
-		result = fmt.Sprintf("%s.%s", mapping.PkgToImportPkg(mapping.MessagePackage(message)), string(message.Name()))
-	case protoreflect.EnumKind:
-		enum := field.Desc.Enum()
-		result = fmt.Sprintf("%s.%s", mapping.PkgToImportPkg(mapping.EnumPackage(enum)), string(enum.Name()))
-	default:
-		result = mapping.MapKindToString(field.Desc.Kind())
-	}
-
-	if field.Desc.Cardinality() == protoreflect.Repeated {
-		result = fmt.Sprintf("Array<%s>", result)
-	}
-
-	return result
+	return mapping.FieldType(field)
 }

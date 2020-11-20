@@ -2,6 +2,7 @@ package mapping
 
 import (
 	"fmt"
+	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"strings"
 )
@@ -20,16 +21,24 @@ func DescriptorPackage(m protoreflect.Descriptor) string {
 	return string(parent.FullName())
 }
 
-// MessagePackage returns the package of the given message.
-// E.g. platform.v1.query.MatchedStringValue returns platform.v1.query
-func MessagePackage(m protoreflect.MessageDescriptor) string {
-	return DescriptorPackage(m)
-}
+func FieldType(field *protogen.Field) string {
+	var result string
+	switch field.Desc.Kind() {
+	case protoreflect.MessageKind:
+		message := field.Desc.Message()
+		result = fmt.Sprintf("%s.%s", PkgToImportPkg(DescriptorPackage(message)), string(message.Name()))
+	case protoreflect.EnumKind:
+		enum := field.Desc.Enum()
+		result = fmt.Sprintf("%s.%s", PkgToImportPkg(DescriptorPackage(enum)), string(enum.Name()))
+	default:
+		result = MapKindToString(field.Desc.Kind())
+	}
 
-// EnumPackage returns the package of the given enum.
-// E.g. ui.crud.v1.Resource.Datasource returns ui.crud.v1
-func EnumPackage(m protoreflect.EnumDescriptor) string {
-	return DescriptorPackage(m)
+	if field.Desc.Cardinality() == protoreflect.Repeated {
+		result = fmt.Sprintf("Array<%s>", result)
+	}
+
+	return result
 }
 
 func MapKindToString(k protoreflect.Kind) string {
