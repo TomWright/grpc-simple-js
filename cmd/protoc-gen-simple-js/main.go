@@ -8,7 +8,7 @@ import (
 
 // Loosely based off of https://github.com/drekle/protoc-gen-goexample/blob/master/main.go
 func main() {
-	runner := &internal.Runner{}
+	runner := internal.NewRunner()
 
 	protogen.Options{
 		ParamFunc:         nil,

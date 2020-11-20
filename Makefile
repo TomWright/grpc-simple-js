@@ -36,7 +36,7 @@ NPM?=npm
 SORTED_PROTO_FILES=$(shell find /Users/tom/repos/github.com/Skedulo/protobuf/src -name '*.proto' | sort)
 
 default: clean autogen
-dependencies: deps-go deps-python deps-ts deps-ensure
+dependencies: deps-go deps-ensure
 
 format:
 	clang-format -i --style=file ${SORTED_PROTO_FILES}
@@ -78,9 +78,22 @@ deps-go:
 
 autogen: deps-ensure clean gen-lang-web
 
+#gen-lang-web:
+#	rm -rf autogen
+#	mkdir -p autogen
+#	protoc ${PROTOC_INCLUDES} \
+#		--simple-js_out="./autogen" \
+#		${SORTED_PROTO_FILES}
+
 gen-lang-web:
-	rm -rf autogen
-	mkdir -p autogen
+	rm -rf autogen/lang/web
+	mkdir -p autogen/lang/web/
 	protoc ${PROTOC_INCLUDES} \
-		--simple-js_out="./autogen" \
+		--js_out="import_style=commonjs,binary:./autogen/lang/web" \
+		--grpc-web_out="import_style=commonjs+dts,mode=grpcwebtext:./autogen/lang/web" \
+		--simple-js_out="./autogen/lang/web" \
 		${SORTED_PROTO_FILES}
+	find autogen/lang/web -type f \( -name "*.js" -o -name "*.ts" \) -exec sed -i '' '/google_api_annotations_pb/d' {} +
+	find autogen/lang/web -type f -exec sed -i '' 's@../src/@@g' {} +
+#	cp static/web/{package.json,tsconfig.json,webpack.config.js} autogen/lang/web
+#	cp static/web/index.ts autogen/lang/web/src

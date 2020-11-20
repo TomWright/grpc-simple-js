@@ -34,10 +34,10 @@ func (fm *funcMap) fieldType(field *protogen.Field) string {
 	switch field.Desc.Kind() {
 	case protoreflect.MessageKind:
 		message := field.Desc.Message()
-		result = string(message.Name())
+		result = fmt.Sprintf("%s.%s", mapping.PkgToImportPkg(mapping.MessagePackage(message)), string(message.Name()))
 	case protoreflect.EnumKind:
 		enum := field.Desc.Enum()
-		result = string(enum.Name())
+		result = fmt.Sprintf("%s.%s", mapping.PkgToImportPkg(mapping.EnumPackage(enum)), string(enum.Name()))
 	default:
 		result = mapping.MapKindToString(field.Desc.Kind())
 	}

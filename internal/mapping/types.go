@@ -6,12 +6,30 @@ import (
 	"strings"
 )
 
-func MessagePackage(m protoreflect.MessageDescriptor) string {
-	return strings.TrimSuffix(string(m.FullName()), "."+string(m.Name()))
+func PkgToImportPkg(pkg string) string {
+	return strings.Replace(pkg, ".", "_", -1)
 }
 
+// DescriptorPackage returns the package of the given descriptor.
+// E.g. platform.v1.query.MatchedStringValue returns platform.v1.query
+func DescriptorPackage(m protoreflect.Descriptor) string {
+	parent := m.ParentFile()
+	if parent == nil {
+		return string(m.FullName())
+	}
+	return string(parent.FullName())
+}
+
+// MessagePackage returns the package of the given message.
+// E.g. platform.v1.query.MatchedStringValue returns platform.v1.query
+func MessagePackage(m protoreflect.MessageDescriptor) string {
+	return DescriptorPackage(m)
+}
+
+// EnumPackage returns the package of the given enum.
+// E.g. ui.crud.v1.Resource.Datasource returns ui.crud.v1
 func EnumPackage(m protoreflect.EnumDescriptor) string {
-	return strings.TrimSuffix(string(m.FullName()), "."+string(m.Name()))
+	return DescriptorPackage(m)
 }
 
 func MapKindToString(k protoreflect.Kind) string {
