@@ -127,7 +127,7 @@ func (fm *funcMap) mapperFromGrpcWebAssignMessageField(f *protogen.Field, pkg st
 
 	getterName := "get" + strings.Title(grpcWebFieldName)
 
-	newValue := fmt.Sprintf("input.%s()", getterName)
+	newValue := fmt.Sprintf("input ? input.%s() : undefined", getterName)
 
 	switch f.Desc.Kind() {
 	case protoreflect.MessageKind:
