@@ -16,20 +16,21 @@ type funcMap struct {
 
 func (fm *funcMap) toMap() template.FuncMap {
 	return template.FuncMap{
-		"messageName":                       fm.messageName,
-		"messageType":                       fm.messageType,
-		"enumName":                          fm.enumName,
-		"enumNameWithPrefix":                fm.enumNameWithPrefix,
-		"enumType":                          fm.enumType,
-		"enumTypeWithPrefix":                fm.enumTypeWithPrefix,
-		"fieldName":                         fm.fieldName,
-		"fieldType":                         fm.fieldType,
-		"enumValueName":                     fm.enumValueName,
-		"enumValue":                         fm.enumValue,
-		"mapperToGrpcWebAssignMessageField": fm.mapperToGrpcWebAssignMessageField,
-		"mapperToGrpcWebEnumValueCase":      fm.mapperToGrpcWebEnumValueCase,
-		"descriptorGrpcWebPrefix":           fm.descriptorGrpcWebPrefix,
-		"descriptorPrefix":                  fm.descriptorPrefix,
+		"messageName":                         fm.messageName,
+		"messageType":                         fm.messageType,
+		"enumName":                            fm.enumName,
+		"enumNameWithPrefix":                  fm.enumNameWithPrefix,
+		"enumType":                            fm.enumType,
+		"enumTypeWithPrefix":                  fm.enumTypeWithPrefix,
+		"fieldName":                           fm.fieldName,
+		"fieldType":                           fm.fieldType,
+		"enumValueName":                       fm.enumValueName,
+		"enumValue":                           fm.enumValue,
+		"mapperToGrpcWebAssignMessageField":   fm.mapperToGrpcWebAssignMessageField,
+		"mapperFromGrpcWebAssignMessageField": fm.mapperFromGrpcWebAssignMessageField,
+		"mapperToGrpcWebEnumValueCase":        fm.mapperToGrpcWebEnumValueCase,
+		"descriptorGrpcWebPrefix":             fm.descriptorGrpcWebPrefix,
+		"descriptorPrefix":                    fm.descriptorPrefix,
 	}
 }
 
@@ -118,6 +119,40 @@ func (fm *funcMap) mapperToGrpcWebAssignMessageField(f *protogen.Field, pkg stri
 	}
 
 	return fmt.Sprintf("result.%s(%s)", setterName, newValue)
+}
+
+func (fm *funcMap) mapperFromGrpcWebAssignMessageField(f *protogen.Field, pkg string, grpcWebPackage string) string {
+	fieldName := fm.fieldName(f)
+	grpcWebFieldName := fm.grpcWebFieldName(f)
+
+	getterName := "get" + strings.Title(grpcWebFieldName)
+
+	newValue := fmt.Sprintf("input.%s()", getterName)
+
+	switch f.Desc.Kind() {
+	case protoreflect.MessageKind:
+
+		mapperPkg := mapping.FieldTypeDescriptorPackage(f.Desc, "mappers")
+		if mapperPkg != "" && mapperPkg != pkg {
+			mapperPkg = mapping.PkgToImportPkg(mapperPkg) + "."
+		} else {
+			mapperPkg = ""
+		}
+
+		if f.Desc.IsMap() {
+			mapName := fmt.Sprintf("%sMap", fieldName)
+			mapGetter := fmt.Sprintf("get%sMap", strings.Title(fieldName))
+			return fmt.Sprintf("const %s = result.%s();\n    input.%s.forEach(x => { %s.put(x.key, %smap%sFromGrpcWeb(x.value)) })", mapName, mapGetter, fieldName, mapName, mapperPkg, mapping.FieldDescriptorTypePlain(f.Desc.MapValue(), pkg))
+		} else if f.Desc.Cardinality() == protoreflect.Repeated {
+			newValue = fmt.Sprintf("input.%s().map(x => %smap%sFromGrpcWeb(x))", getterName, mapperPkg, mapping.FieldTypePlain(f, pkg))
+		} else {
+			newValue = fmt.Sprintf("%smap%sFromGrpcWeb(input.%s())", mapperPkg, mapping.FieldTypePlain(f, pkg), getterName)
+		}
+	case protoreflect.EnumKind:
+		newValue = fmt.Sprintf("map%sFromGrpcWeb(input.%s)", mapping.FieldTypePlain(f, pkg), fieldName)
+	}
+
+	return fmt.Sprintf("%s: %s,", fieldName, newValue)
 }
 
 func (fm *funcMap) mapperToGrpcWebEnumValueCase(f *protogen.EnumValue, pkg string, grpcWebPackage string) string {

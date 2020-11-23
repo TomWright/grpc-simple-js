@@ -11,14 +11,14 @@ import (
 	"text/template"
 )
 
-type messageMapperTemplateData struct {
+type messageMapperToGrpcWebTemplateData struct {
 	Message        *protogen.Message
 	Package        string
 	Prefix         string
 	GrpcWebPackage string
 }
 
-var messageMapperTemplate = template.Must(template.New("messageMapper").
+var messageMapperToGrpcWebTemplate = template.Must(template.New("messageMapperToGrpcWeb").
 	Funcs(defaultFuncMap.toMap()).
 	Parse(`
 {{- $package := .Package -}}
@@ -29,6 +29,28 @@ export const map{{ messageName .Message }}ToGrpcWeb = (input?: {{ messageType .M
 	{{ mapperToGrpcWebAssignMessageField . $package $grpcWebPackage }}
 {{- end }}
 	return result
+}
+
+`))
+
+type messageMapperFromGrpcWebTemplateData struct {
+	Message        *protogen.Message
+	Package        string
+	Prefix         string
+	GrpcWebPackage string
+}
+
+var messageMapperFromGrpcWebTemplate = template.Must(template.New("messageMapperFromGrpcWeb").
+	Funcs(defaultFuncMap.toMap()).
+	Parse(`
+{{- $package := .Package -}}
+{{- $grpcWebPackage := .GrpcWebPackage -}}
+export const map{{ messageName .Message }}FromGrpcWeb = (input?: {{ $grpcWebPackage }}.{{ messageName .Message }}): {{ messageType .Message }} => {
+	return {
+{{- range .Message.Fields }}
+		{{ mapperFromGrpcWebAssignMessageField . $package $grpcWebPackage }}
+{{- end }}
+	}
 }
 
 `))
@@ -57,15 +79,18 @@ export const map{{ enumNameWithPrefix .Enum }}ToGrpcWeb = (input?: {{ enumTypeWi
 
 func (p *Runner) writeMessageMappers(messages []*protogen.Message, out *protogen.GeneratedFile, currentPkg string, grpcWebPackage string) {
 	for _, m := range messages {
-		data := messageMapperTemplateData{
+		data := messageMapperToGrpcWebTemplateData{
 			Message:        m,
 			Package:        currentPkg,
 			Prefix:         mapping.DescriptorPrefix(m.Desc),
 			GrpcWebPackage: grpcWebPackage,
 		}
 		if !m.Desc.IsMapEntry() {
-			if err := messageMapperTemplate.Execute(out, data); err != nil {
-				log.Fatalf("messageTemplate.Execute failed: %s", err)
+			if err := messageMapperToGrpcWebTemplate.Execute(out, data); err != nil {
+				log.Fatalf("messageMapperToGrpcWebTemplate.Execute failed: %s", err)
+			}
+			if err := messageMapperFromGrpcWebTemplate.Execute(out, data); err != nil {
+				log.Fatalf("messageMapperFromGrpcWebTemplate.Execute failed: %s", err)
 			}
 		}
 

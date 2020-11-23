@@ -8,6 +8,9 @@ all: build autogen
 build:
 	go build -o /usr/local/bin/protoc-gen-simple-js cmd/protoc-gen-simple-js/main.go
 
+build-protobuf:
+	go build -o /Users/tom/repos/github.com/Skedulo/protobuf/protoc-gen-simple-js cmd/protoc-gen-simple-js/main.go
+
 PROTOC_INCLUDES= -I. \
 	-I/usr/local/include \
 	-I${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
