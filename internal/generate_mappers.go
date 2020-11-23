@@ -47,7 +47,8 @@ var messageMapperFromGrpcWebTemplate = template.Must(template.New("messageMapper
 	Parse(`
 {{- $package := .Package -}}
 {{- $grpcWebPackage := .GrpcWebPackage -}}
-export const map{{ messageName .Message }}FromGrpcWeb = (input: {{ $grpcWebPackage }}.{{ messageName .Message }}): {{ messageType .Message }} => {
+export const map{{ messageName .Message }}FromGrpcWeb = (input?: {{ $grpcWebPackage }}.{{ messageName .Message }}): {{ messageType .Message }} => {
+	if (!input) return
 	return {
 {{- range .Message.Fields }}
 		{{ mapperFromGrpcWebAssignMessageField . $package $grpcWebPackage }}
