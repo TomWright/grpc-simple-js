@@ -149,7 +149,7 @@ func (fm *funcMap) mapperFromGrpcWebAssignMessageField(f *protogen.Field, pkg st
 			newValue = fmt.Sprintf("%smap%sFromGrpcWeb(input.%s())", mapperPkg, mapping.FieldTypePlain(f, pkg), getterName)
 		}
 	case protoreflect.EnumKind:
-		newValue = fmt.Sprintf("map%sFromGrpcWeb(input.%s)", mapping.FieldTypePlain(f, pkg), fieldName)
+		newValue = fmt.Sprintf("map%sFromGrpcWeb(input.%s())", mapping.FieldTypePlain(f, pkg), getterName)
 	}
 
 	return fmt.Sprintf("%s: %s,", fieldName, newValue)
