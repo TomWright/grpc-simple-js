@@ -27,7 +27,7 @@ export const map{{ messageName .Message }}ToGrpcWeb = (input?: {{ messageType .M
 	const result = new {{ $grpcWebPackage }}.{{ messageName .Message }}()
 {{- range .Message.Fields }}
 	{{ mapperToGrpcWebAssignMessageField . $package $grpcWebPackage }}
-{{- end }}        
+{{- end }}
 	return result
 }
 
@@ -49,7 +49,7 @@ export const map{{ enumNameWithPrefix .Enum }}ToGrpcWeb = (input?: {{ enumTypeWi
 	switch (input) {
 {{- range .Enum.Values }}
 		{{ mapperToGrpcWebEnumValueCase . $package $grpcWebPackage }}
-{{- end }}     
+{{- end }}
 	}
 }
 
@@ -63,8 +63,10 @@ func (p *Runner) writeMessageMappers(messages []*protogen.Message, out *protogen
 			Prefix:         mapping.DescriptorPrefix(m.Desc),
 			GrpcWebPackage: grpcWebPackage,
 		}
-		if err := messageMapperTemplate.Execute(out, data); err != nil {
-			log.Fatalf("messageTemplate.Execute failed: %s", err)
+		if !m.Desc.IsMapEntry() {
+			if err := messageMapperTemplate.Execute(out, data); err != nil {
+				log.Fatalf("messageTemplate.Execute failed: %s", err)
+			}
 		}
 
 		p.writeMessageMappers(m.Messages, out, currentPkg, grpcWebPackage)

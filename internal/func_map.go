@@ -5,7 +5,6 @@ import (
 	"github.com/tomwright/grpc-simple-js/internal/mapping"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"log"
 	"strings"
 	"text/template"
 )
@@ -97,18 +96,19 @@ func (fm *funcMap) mapperToGrpcWebAssignMessageField(f *protogen.Field, pkg stri
 	switch f.Desc.Kind() {
 	case protoreflect.MessageKind:
 
-		// result.setValuesList(input.values.map(x => mapSchemaFieldMetadataValueToGrpcWeb(x)))
-
 		mapperPkg := mapping.FieldTypeDescriptorPackage(f.Desc, "mappers")
 		if mapperPkg != "" && mapperPkg != pkg {
 			// log.Println(mapperPkg, pkg)
 			mapperPkg = mapping.PkgToImportPkg(mapperPkg) + "."
 		} else {
 			mapperPkg = ""
-			log.Println("here")
 		}
 
-		if f.Desc.Cardinality() == protoreflect.Repeated {
+		if f.Desc.IsMap() {
+			mapName := fmt.Sprintf("%sMap", fieldName)
+			mapGetter := fmt.Sprintf("get%sMap", strings.Title(fieldName))
+			return fmt.Sprintf("const %s = result.%s();\n    input.%s.forEach(x => { %s.put(x.key, %smap%sToGrpcWeb(x.value)) })", mapName, mapGetter, fieldName, mapName, mapperPkg, mapping.FieldDescriptorTypePlain(f.Desc.MapValue(), pkg))
+		} else if f.Desc.Cardinality() == protoreflect.Repeated {
 			newValue = fmt.Sprintf("input.%s.map(x => %smap%sToGrpcWeb(x))", fieldName, mapperPkg, mapping.FieldTypePlain(f, pkg))
 		} else {
 			newValue = fmt.Sprintf("%smap%sToGrpcWeb(input.%s)", mapperPkg, mapping.FieldTypePlain(f, pkg), fieldName)
