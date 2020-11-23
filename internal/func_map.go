@@ -92,7 +92,7 @@ func (fm *funcMap) mapperToGrpcWebAssignMessageField(f *protogen.Field, pkg stri
 
 	setterName := "set" + strings.Title(grpcWebFieldName)
 
-	newValue := fmt.Sprintf("input.%s", fieldName)
+	newValue := fmt.Sprintf("input.%s!", fieldName)
 	wrapCheckValue := fmt.Sprintf("input.%s", fieldName)
 
 	switch f.Desc.Kind() {
@@ -110,12 +110,12 @@ func (fm *funcMap) mapperToGrpcWebAssignMessageField(f *protogen.Field, pkg stri
 			mapGetter := fmt.Sprintf("get%sMap", strings.Title(fieldName))
 			return fmt.Sprintf("const %s = result.%s();\n    input.%s.forEach(x => { %s.put(x.key, %smap%sToGrpcWeb(x.value)) })", mapName, mapGetter, fieldName, mapName, mapperPkg, mapping.FieldDescriptorTypePlain(f.Desc.MapValue(), pkg))
 		} else if f.Desc.Cardinality() == protoreflect.Repeated {
-			newValue = fmt.Sprintf("input.%s.map(x => %smap%sToGrpcWeb(x))", fieldName, mapperPkg, mapping.FieldTypePlain(f, pkg))
+			newValue = fmt.Sprintf("input.%s!.map(x => %smap%sToGrpcWeb(x))", fieldName, mapperPkg, mapping.FieldTypePlain(f, pkg))
 		} else {
-			newValue = fmt.Sprintf("%smap%sToGrpcWeb(input.%s)", mapperPkg, mapping.FieldTypePlain(f, pkg), fieldName)
+			newValue = fmt.Sprintf("%smap%sToGrpcWeb(input.%s!)", mapperPkg, mapping.FieldTypePlain(f, pkg), fieldName)
 		}
 	case protoreflect.EnumKind:
-		newValue = fmt.Sprintf("map%sToGrpcWeb(input.%s)", mapping.FieldTypePlain(f, pkg), fieldName)
+		newValue = fmt.Sprintf("map%sToGrpcWeb(input.%s!)", mapping.FieldTypePlain(f, pkg), fieldName)
 	}
 
 	return fmt.Sprintf("if (typeof %s !== undefined) result.%s(%s)", wrapCheckValue, setterName, newValue)
