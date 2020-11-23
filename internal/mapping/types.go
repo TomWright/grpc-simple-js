@@ -51,12 +51,16 @@ loop:
 
 // DescriptorPackage returns the package of the given descriptor.
 // E.g. platform.v1.query.MatchedStringValue returns platform.v1.query
-func DescriptorPackage(m protoreflect.Descriptor) string {
+func DescriptorPackage(m protoreflect.Descriptor, pkg string) string {
 	parent := m.ParentFile()
-	if parent == nil {
-		return string(m.FullName())
+	res := string(m.FullName())
+	if parent != nil {
+		res = string(parent.FullName())
 	}
-	return string(parent.FullName())
+	if pkg != "" {
+		res += "." + pkg
+	}
+	return res
 }
 
 func formatFieldType(pkg string, currentPkg string, descriptor protoreflect.Descriptor) string {
@@ -67,14 +71,14 @@ func formatFieldType(pkg string, currentPkg string, descriptor protoreflect.Desc
 	return name
 }
 
-func FieldTypeDescriptorPackage(field protoreflect.FieldDescriptor) string {
+func FieldTypeDescriptorPackage(field protoreflect.FieldDescriptor, pkg string) string {
 	switch field.Kind() {
 	case protoreflect.MessageKind:
 		message := field.Message()
-		return DescriptorPackage(message)
+		return DescriptorPackage(message, pkg)
 	case protoreflect.EnumKind:
 		enum := field.Enum()
-		return DescriptorPackage(enum)
+		return DescriptorPackage(enum, pkg)
 	default:
 		return ""
 	}
@@ -85,10 +89,10 @@ func FieldDescriptorType(field protoreflect.FieldDescriptor, pkg string, withCar
 	switch field.Kind() {
 	case protoreflect.MessageKind:
 		message := field.Message()
-		result = formatFieldType(DescriptorPackage(message), pkg, message)
+		result = formatFieldType(DescriptorPackage(message, "types"), pkg, message)
 	case protoreflect.EnumKind:
 		enum := field.Enum()
-		result = formatFieldType(DescriptorPackage(enum), pkg, enum)
+		result = formatFieldType(DescriptorPackage(enum, "types"), pkg, enum)
 	default:
 		result = MapKindToString(field.Kind())
 	}
@@ -100,12 +104,32 @@ func FieldDescriptorType(field protoreflect.FieldDescriptor, pkg string, withCar
 	return result
 }
 
+func FieldDescriptorTypePlain(field protoreflect.FieldDescriptor, pkg string) string {
+	var result string
+	switch field.Kind() {
+	case protoreflect.MessageKind:
+		message := field.Message()
+		result = formatFieldType(DescriptorPackage(message, "types"), "", message)
+	case protoreflect.EnumKind:
+		enum := field.Enum()
+		result = formatFieldType(DescriptorPackage(enum, "types"), "", enum)
+	default:
+		result = MapKindToString(field.Kind())
+	}
+
+	return result
+}
+
 func FieldType(field *protogen.Field, pkg string) string {
 	return FieldDescriptorType(field.Desc, pkg, true)
 }
 
 func FieldTypeNoCardinality(field *protogen.Field, pkg string) string {
 	return FieldDescriptorType(field.Desc, pkg, false)
+}
+
+func FieldTypePlain(field *protogen.Field, pkg string) string {
+	return FieldDescriptorTypePlain(field.Desc, pkg)
 }
 
 func MapKindToString(k protoreflect.Kind) string {

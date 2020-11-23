@@ -81,7 +81,7 @@ func (p *Runner) generateTypes(plugin *protogen.Plugin) error {
 	for _, f := range plugin.Files {
 		// Create the output file
 		outputDir := filepath.Dir(f.Desc.Path())
-		outputFile := strings.TrimSuffix(filepath.Base(f.Desc.Path()), filepath.Ext(f.Desc.Path())) + "_sjs.ts"
+		outputFile := strings.TrimSuffix(filepath.Base(f.Desc.Path()), filepath.Ext(f.Desc.Path())) + "_types_sjs.ts"
 		outputPath := fmt.Sprintf("%s/%s", outputDir, outputFile)
 		out := plugin.NewGeneratedFile(outputPath, "")
 
@@ -92,8 +92,7 @@ func (p *Runner) generateTypes(plugin *protogen.Plugin) error {
 			log.Fatalf("could not add required imports: %s", err)
 		}
 
-		currentPackage := mapping.DescriptorPackage(f.Desc)
-		mapping.DescriptorPackage(f.Desc)
+		currentPackage := mapping.DescriptorPackage(f.Desc, "types")
 
 		p.writeMessages(f.Messages, out, currentPackage)
 		p.writeEnums(f.Enums, out, currentPackage)
@@ -129,8 +128,8 @@ func (p *Runner) generateTypesImports(f *protogen.File, out *protogen.GeneratedF
 
 		r := &requiredImport{
 			FileDesc:     requiredFile,
-			ImportName:   mapping.PkgToImportPkg(mapping.DescriptorPackage(requiredFile)),
-			RelativePath: mapping.ProtoToSimpleJS(mapping.RelativePathBetweenPaths(currentPath, requiredFile.Path()), false, ""),
+			ImportName:   mapping.PkgToImportPkg(mapping.DescriptorPackage(requiredFile, "types")),
+			RelativePath: mapping.ProtoToSimpleJS(mapping.RelativePathBetweenPaths(currentPath, requiredFile.Path()), false, "_types"),
 		}
 
 		if r.RelativePath == "" {
