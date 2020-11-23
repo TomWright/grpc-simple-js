@@ -37,6 +37,9 @@ func (p *Runner) Run(plugin *protogen.Plugin) error {
 	if err := p.generateTypes(plugin); err != nil {
 		return fmt.Errorf("could not generate types: %w", err)
 	}
+	if err := p.generateMappers(plugin); err != nil {
+		return fmt.Errorf("could not generate types: %w", err)
+	}
 	return nil
 }
 

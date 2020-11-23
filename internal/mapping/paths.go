@@ -7,9 +7,9 @@ import (
 const protoExt = ".proto"
 const simpleJSExt = "_sjs"
 
-func ProtoToSimpleJS(path string, withExt bool) string {
+func ProtoToSimpleJS(path string, withExt bool, additionalSuffix string) string {
 	if strings.HasSuffix(path, protoExt) {
-		path = strings.TrimSuffix(path, protoExt) + simpleJSExt
+		path = strings.TrimSuffix(path, protoExt) + additionalSuffix + simpleJSExt
 		if withExt {
 			path += ".ts"
 		}
@@ -37,6 +37,10 @@ func RelativePathBetweenPaths(from string, to string) string {
 	relativePath := ""
 	for remaining := len(splitFrom); matchesUpTo < remaining; remaining-- {
 		relativePath += "../"
+	}
+
+	if relativePath == "" {
+		relativePath = "./"
 	}
 
 	for i := matchesUpTo; i < len(splitTo); i++ {

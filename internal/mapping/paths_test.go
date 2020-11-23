@@ -11,4 +11,10 @@ func TestRelativePathBetweenPaths(t *testing.T) {
 	if exp != got {
 		t.Errorf("expected %s, got %s", exp, got)
 	}
+
+	got = mapping.RelativePathBetweenPaths("src/ui/api/api.proto", "src/ui/api/crud.proto")
+	exp = "./crud.proto"
+	if exp != got {
+		t.Errorf("expected %s, got %s", exp, got)
+	}
 }

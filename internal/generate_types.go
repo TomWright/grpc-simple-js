@@ -130,7 +130,7 @@ func (p *Runner) generateTypesImports(f *protogen.File, out *protogen.GeneratedF
 		r := &requiredImport{
 			FileDesc:     requiredFile,
 			ImportName:   mapping.PkgToImportPkg(mapping.DescriptorPackage(requiredFile)),
-			RelativePath: mapping.ProtoToSimpleJS(mapping.RelativePathBetweenPaths(currentPath, requiredFile.Path()), false),
+			RelativePath: mapping.ProtoToSimpleJS(mapping.RelativePathBetweenPaths(currentPath, requiredFile.Path()), false, ""),
 		}
 
 		if r.RelativePath == "" {

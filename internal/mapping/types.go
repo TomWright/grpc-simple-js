@@ -30,6 +30,25 @@ loop:
 	return prefix
 }
 
+// DescriptorGrpcWebPrefix returns the prefix for the descriptor.
+// This is required for nested types.
+func DescriptorGrpcWebPrefix(desc protoreflect.Descriptor) string {
+	prefix := ""
+	cur := desc
+loop:
+	for {
+		p := cur.Parent()
+		switch p.(type) {
+		case nil, protoreflect.FileDescriptor:
+			break loop
+		default:
+			prefix = string(p.Name()) + "." + prefix
+		}
+		cur = p
+	}
+	return prefix
+}
+
 // DescriptorPackage returns the package of the given descriptor.
 // E.g. platform.v1.query.MatchedStringValue returns platform.v1.query
 func DescriptorPackage(m protoreflect.Descriptor) string {
@@ -42,13 +61,26 @@ func DescriptorPackage(m protoreflect.Descriptor) string {
 
 func formatFieldType(pkg string, currentPkg string, descriptor protoreflect.Descriptor) string {
 	name := DescriptorPrefix(descriptor) + string(descriptor.Name())
-	if pkg != currentPkg {
+	if pkg != currentPkg && currentPkg != "" {
 		name = PkgToImportPkg(pkg) + "." + name
 	}
 	return name
 }
 
-func FieldDescriptorType(field protoreflect.FieldDescriptor, pkg string) string {
+func FieldTypeDescriptorPackage(field protoreflect.FieldDescriptor) string {
+	switch field.Kind() {
+	case protoreflect.MessageKind:
+		message := field.Message()
+		return DescriptorPackage(message)
+	case protoreflect.EnumKind:
+		enum := field.Enum()
+		return DescriptorPackage(enum)
+	default:
+		return ""
+	}
+}
+
+func FieldDescriptorType(field protoreflect.FieldDescriptor, pkg string, withCardinality bool) string {
 	var result string
 	switch field.Kind() {
 	case protoreflect.MessageKind:
@@ -61,7 +93,7 @@ func FieldDescriptorType(field protoreflect.FieldDescriptor, pkg string) string 
 		result = MapKindToString(field.Kind())
 	}
 
-	if field.Cardinality() == protoreflect.Repeated {
+	if withCardinality && field.Cardinality() == protoreflect.Repeated {
 		result = fmt.Sprintf("Array<%s>", result)
 	}
 
@@ -69,7 +101,11 @@ func FieldDescriptorType(field protoreflect.FieldDescriptor, pkg string) string 
 }
 
 func FieldType(field *protogen.Field, pkg string) string {
-	return FieldDescriptorType(field.Desc, pkg)
+	return FieldDescriptorType(field.Desc, pkg, true)
+}
+
+func FieldTypeNoCardinality(field *protogen.Field, pkg string) string {
+	return FieldDescriptorType(field.Desc, pkg, false)
 }
 
 func MapKindToString(k protoreflect.Kind) string {
