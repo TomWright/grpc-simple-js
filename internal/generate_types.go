@@ -24,7 +24,7 @@ var messageTemplate = template.Must(template.New("message").
 {{- $package := .Package -}}
 export type {{ .Prefix }}{{ messageName .Message }} = {
 {{- range .Message.Fields }}
-    {{ fieldName . }}: {{ fieldType . $package }},
+    {{ fieldName . }}: {{ fieldType . $package }} | undefined,
 {{- end }}
 }
 
