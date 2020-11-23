@@ -20,11 +20,38 @@ type Runner struct {
 	enumFiles    map[protoreflect.FullName]protoreflect.FileDescriptor
 }
 
+type messageTemplateData struct {
+	Message *protogen.Message
+	Package string
+	Prefix  string
+}
+
+// todo : remove comma from last field in exported type
 var messageTemplate = template.Must(template.New("message").
 	Funcs(defaultFuncMap.toMap()).
-	Parse(`export type {{ messageName . }} = {
-{{- range  .Fields }}
-    {{ fieldName . }}: {{ fieldType . }},
+	Parse(`
+{{- $package := .Package -}}
+export type {{ .Prefix }}{{ messageName .Message }} = {
+{{- range .Message.Fields }}
+    {{ fieldName . }}: {{ fieldType . $package }},
+{{- end }}
+}
+
+`))
+
+type enumTemplateData struct {
+	Enum    *protogen.Enum
+	Package string
+	Prefix  string
+}
+
+// todo : remove comma from last field in exported enum
+var enumTemplate = template.Must(template.New("enum").
+	Funcs(defaultFuncMap.toMap()).
+	Parse(`
+export enum {{.Prefix}}{{ enumName .Enum }} {
+{{- range .Enum.Values }}
+    {{ enumValueName . }} = {{ enumValue . }},
 {{- end }}
 }
 
@@ -93,6 +120,35 @@ func (p *Runner) discoverFiles(plugin *protogen.Plugin) error {
 	return nil
 }
 
+func (p *Runner) writeMessages(messages []*protogen.Message, out *protogen.GeneratedFile, currentPkg string) {
+	for _, m := range messages {
+		data := messageTemplateData{
+			Message: m,
+			Package: currentPkg,
+			Prefix:  mapping.DescriptorPrefix(m.Desc),
+		}
+		if err := messageTemplate.Execute(out, data); err != nil {
+			log.Fatalf("messageTemplate.Execute failed: %s", err)
+		}
+
+		p.writeMessages(m.Messages, out, currentPkg)
+		p.writeEnums(m.Enums, out, currentPkg)
+	}
+}
+
+func (p *Runner) writeEnums(enums []*protogen.Enum, out *protogen.GeneratedFile, currentPkg string) {
+	for _, m := range enums {
+		data := enumTemplateData{
+			Enum:    m,
+			Package: currentPkg,
+			Prefix:  mapping.DescriptorPrefix(m.Desc),
+		}
+		if err := enumTemplate.Execute(out, data); err != nil {
+			log.Fatalf("enumTemplate.Execute failed: %s", err)
+		}
+	}
+}
+
 func (p *Runner) run(plugin *protogen.Plugin) error {
 	for _, f := range plugin.Files {
 		// Create the output file
@@ -108,16 +164,12 @@ func (p *Runner) run(plugin *protogen.Plugin) error {
 			log.Fatalf("could not add required imports: %s", err)
 		}
 
-		// Write message types to output file
-		for _, m := range f.Messages {
-			if err := messageTemplate.Execute(out, m); err != nil {
-				log.Fatalf("messageTemplate.Execute failed: %s", err)
-			}
-			// log.Println("----- MESSAGE START -----")
-			// log.Println(m.Desc.Name())
-			// out.Write([]byte(fmt.Sprintf("export type %s = {\n%s\n}")))
-			// log.Println("----- MESSAGE END -----")
-		}
+		currentPackage := mapping.DescriptorPackage(f.Desc)
+		mapping.DescriptorPackage(f.Desc)
+
+		p.writeMessages(f.Messages, out, currentPackage)
+		p.writeEnums(f.Enums, out, currentPackage)
+
 	}
 
 	return nil
