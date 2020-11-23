@@ -144,7 +144,7 @@ func (fm *funcMap) mapperFromGrpcWebAssignMessageField(f *protogen.Field, pkg st
 			mapGetter := fmt.Sprintf("get%sMap", strings.Title(fieldName))
 			return fmt.Sprintf("const %s = result.%s();\n    input.%s.forEach(x => { %s.put(x.key, %smap%sFromGrpcWeb(x.value)) })", mapName, mapGetter, fieldName, mapName, mapperPkg, mapping.FieldDescriptorTypePlain(f.Desc.MapValue(), pkg))
 		} else if f.Desc.Cardinality() == protoreflect.Repeated {
-			newValue = fmt.Sprintf("input.%s().map(x => %smap%sFromGrpcWeb(x))", getterName, mapperPkg, mapping.FieldTypePlain(f, pkg))
+			newValue = fmt.Sprintf("input.%s().map(x => %smap%sFromGrpcWeb(x)!)", getterName, mapperPkg, mapping.FieldTypePlain(f, pkg))
 		} else {
 			newValue = fmt.Sprintf("%smap%sFromGrpcWeb(input.%s())", mapperPkg, mapping.FieldTypePlain(f, pkg), getterName)
 		}
