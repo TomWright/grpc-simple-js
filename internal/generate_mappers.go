@@ -25,9 +25,11 @@ var messageMapperToGrpcWebTemplate = template.Must(template.New("messageMapperTo
 {{- $grpcWebPackage := .GrpcWebPackage -}}
 export const map{{ messageName .Message }}ToGrpcWeb = (input?: {{ messageType .Message }}): {{ $grpcWebPackage }}.{{ messageName .Message }} => {
 	const result = new {{ $grpcWebPackage }}.{{ messageName .Message }}()
+	if (input) {
 {{- range .Message.Fields }}
-	{{ mapperToGrpcWebAssignMessageField . $package $grpcWebPackage }}
+		{{ mapperToGrpcWebAssignMessageField . $package $grpcWebPackage }}
 {{- end }}
+	}
 	return result
 }
 
@@ -79,17 +81,23 @@ export const map{{ enumNameWithPrefix .Enum }}ToGrpcWeb = (input?: {{ enumTypeWi
 
 func (p *Runner) writeMessageMappers(messages []*protogen.Message, out *protogen.GeneratedFile, currentPkg string, grpcWebPackage string) {
 	for _, m := range messages {
-		data := messageMapperToGrpcWebTemplateData{
+		dataTo := messageMapperToGrpcWebTemplateData{
+			Message:        m,
+			Package:        currentPkg,
+			Prefix:         mapping.DescriptorPrefix(m.Desc),
+			GrpcWebPackage: grpcWebPackage,
+		}
+		dataFrom := messageMapperFromGrpcWebTemplateData{
 			Message:        m,
 			Package:        currentPkg,
 			Prefix:         mapping.DescriptorPrefix(m.Desc),
 			GrpcWebPackage: grpcWebPackage,
 		}
 		if !m.Desc.IsMapEntry() {
-			if err := messageMapperToGrpcWebTemplate.Execute(out, data); err != nil {
+			if err := messageMapperToGrpcWebTemplate.Execute(out, dataTo); err != nil {
 				log.Fatalf("messageMapperToGrpcWebTemplate.Execute failed: %s", err)
 			}
-			if err := messageMapperFromGrpcWebTemplate.Execute(out, data); err != nil {
+			if err := messageMapperFromGrpcWebTemplate.Execute(out, dataFrom); err != nil {
 				log.Fatalf("messageMapperFromGrpcWebTemplate.Execute failed: %s", err)
 			}
 		}
