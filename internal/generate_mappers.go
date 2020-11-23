@@ -58,14 +58,14 @@ export const map{{ messageName .Message }}FromGrpcWeb = (input?: {{ $grpcWebPack
 
 `))
 
-type enumMapperMapperTemplateData struct {
+type enumMapperMapperToGrpcWebTemplateData struct {
 	Enum           *protogen.Enum
 	Package        string
 	Prefix         string
 	GrpcWebPackage string
 }
 
-var enumMapperMapperTemplate = template.Must(template.New("enumMapper").
+var enumMapperMapperToGrpcWebTemplate = template.Must(template.New("enumMapperToGrpcWeb").
 	Funcs(defaultFuncMap.toMap()).
 	Parse(`
 {{- $package := .Package -}}
@@ -74,6 +74,28 @@ export const map{{ enumNameWithPrefix .Enum }}ToGrpcWeb = (input?: {{ enumTypeWi
 	switch (input) {
 {{- range .Enum.Values }}
 		{{ mapperToGrpcWebEnumValueCase . $package $grpcWebPackage }}
+{{- end }}
+	}
+}
+
+`))
+
+type enumMapperMapperFromGrpcWebTemplateData struct {
+	Enum           *protogen.Enum
+	Package        string
+	Prefix         string
+	GrpcWebPackage string
+}
+
+var enumMapperMapperFromGrpcWebTemplate = template.Must(template.New("enumMapperFromGrpcWeb").
+	Funcs(defaultFuncMap.toMap()).
+	Parse(`
+{{- $package := .Package -}}
+{{- $grpcWebPackage := .GrpcWebPackage -}}
+export const map{{ enumNameWithPrefix .Enum }}FromGrpcWeb = (input?: {{ $grpcWebPackage }}.{{ descriptorGrpcWebPrefix .Enum.Desc }}{{ enumName .Enum }}): {{ enumTypeWithPrefix .Enum }} => {
+	switch (input) {
+{{- range .Enum.Values }}
+		{{ mapperFromGrpcWebEnumValueCase . $package $grpcWebPackage }}
 {{- end }}
 	}
 }
@@ -110,14 +132,23 @@ func (p *Runner) writeMessageMappers(messages []*protogen.Message, out *protogen
 
 func (p *Runner) writeEnumMappers(enums []*protogen.Enum, out *protogen.GeneratedFile, currentPkg string, grpcWebPackage string) {
 	for _, m := range enums {
-		data := enumMapperMapperTemplateData{
+		dataTo := enumMapperMapperToGrpcWebTemplateData{
 			Enum:           m,
 			Package:        currentPkg,
 			Prefix:         mapping.DescriptorPrefix(m.Desc),
 			GrpcWebPackage: grpcWebPackage,
 		}
-		if err := enumMapperMapperTemplate.Execute(out, data); err != nil {
-			log.Fatalf("enumTemplate.Execute failed: %s", err)
+		dataFrom := enumMapperMapperFromGrpcWebTemplateData{
+			Enum:           m,
+			Package:        currentPkg,
+			Prefix:         mapping.DescriptorPrefix(m.Desc),
+			GrpcWebPackage: grpcWebPackage,
+		}
+		if err := enumMapperMapperToGrpcWebTemplate.Execute(out, dataTo); err != nil {
+			log.Fatalf("enumMapperMapperToGrpcWebTemplate.Execute failed: %s", err)
+		}
+		if err := enumMapperMapperFromGrpcWebTemplate.Execute(out, dataFrom); err != nil {
+			log.Fatalf("enumMapperMapperFromGrpcWebTemplate.Execute failed: %s", err)
 		}
 	}
 }

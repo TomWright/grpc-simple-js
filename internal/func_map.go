@@ -29,6 +29,7 @@ func (fm *funcMap) toMap() template.FuncMap {
 		"mapperToGrpcWebAssignMessageField":   fm.mapperToGrpcWebAssignMessageField,
 		"mapperFromGrpcWebAssignMessageField": fm.mapperFromGrpcWebAssignMessageField,
 		"mapperToGrpcWebEnumValueCase":        fm.mapperToGrpcWebEnumValueCase,
+		"mapperFromGrpcWebEnumValueCase":      fm.mapperFromGrpcWebEnumValueCase,
 		"descriptorGrpcWebPrefix":             fm.descriptorGrpcWebPrefix,
 		"descriptorPrefix":                    fm.descriptorPrefix,
 	}
@@ -162,6 +163,16 @@ func (fm *funcMap) mapperToGrpcWebEnumValueCase(f *protogen.EnumValue, pkg strin
 		f.Desc.Name(),
 		grpcWebPackage,
 		mapping.DescriptorGrpcWebPrefix(f.Parent.Desc)+string(f.Parent.Desc.Name()),
+		f.Desc.Name())
+}
+
+func (fm *funcMap) mapperFromGrpcWebEnumValueCase(f *protogen.EnumValue, pkg string, grpcWebPackage string) string {
+	return fmt.Sprintf("case %s.%s.%s: return %s.%s.%s",
+		grpcWebPackage,
+		mapping.DescriptorGrpcWebPrefix(f.Parent.Desc)+string(f.Parent.Desc.Name()),
+		f.Desc.Name(),
+		mapping.PkgToImportPkg(mapping.DescriptorPackage(f.Desc, "types")),
+		mapping.DescriptorPrefix(f.Parent.Desc)+string(f.Parent.Desc.Name()),
 		f.Desc.Name())
 }
 
