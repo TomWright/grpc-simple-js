@@ -93,10 +93,11 @@ func (fm *funcMap) mapperToGrpcWebAssignMessageField(f *protogen.Field, pkg stri
 	setterName := "set" + strings.Title(grpcWebFieldName)
 
 	newValue := fmt.Sprintf("input.%s", fieldName)
+	wrapSet := true
 
 	switch f.Desc.Kind() {
 	case protoreflect.MessageKind:
-
+		wrapSet = false
 		mapperPkg := mapping.FieldTypeDescriptorPackage(f.Desc, "mappers")
 		if mapperPkg != "" && mapperPkg != pkg {
 			// log.Println(mapperPkg, pkg)
@@ -115,10 +116,15 @@ func (fm *funcMap) mapperToGrpcWebAssignMessageField(f *protogen.Field, pkg stri
 			newValue = fmt.Sprintf("%smap%sToGrpcWeb(input.%s)", mapperPkg, mapping.FieldTypePlain(f, pkg), fieldName)
 		}
 	case protoreflect.EnumKind:
+		wrapSet = false
 		newValue = fmt.Sprintf("map%sToGrpcWeb(input.%s)", mapping.FieldTypePlain(f, pkg), fieldName)
 	}
 
-	return fmt.Sprintf("result.%s(%s)", setterName, newValue)
+	result := fmt.Sprintf("result.%s(%s)", setterName, newValue)
+	if wrapSet {
+		result = fmt.Sprintf("if (%s) %s", newValue, result)
+	}
+	return result
 }
 
 func (fm *funcMap) mapperFromGrpcWebAssignMessageField(f *protogen.Field, pkg string, grpcWebPackage string) string {
