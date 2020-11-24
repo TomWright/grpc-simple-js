@@ -218,11 +218,11 @@ func (fm *funcMap) mapperFromGrpcWebAssignMessageFieldSecondary(f *protogen.Fiel
 			fieldTypePlain := mapping.FieldTypePlain(f, pkg)
 
 			return fmt.Sprintf(`const %s: Array<%s%s> = []
-	input.%s().forEach((x: %s.%s) => {
+	input.%s().forEach((x: any) => {
 		const val = %smap%sFromGrpcWeb(x)
 		if (val !== undefined) %s.push(val)
 	})
-	result.%s = %s`, tmpListName, typePkg, fieldTypePlain, getterName, grpcWebPackage, fieldTypePlain, mapperPkg, fieldTypePlain, tmpListName, fieldName, tmpListName)
+	result.%s = %s`, tmpListName, typePkg, fieldTypePlain, getterName, mapperPkg, fieldTypePlain, tmpListName, fieldName, tmpListName)
 		default:
 			return ""
 		}
