@@ -23,13 +23,12 @@ var messageMapperToGrpcWebTemplate = template.Must(template.New("messageMapperTo
 	Parse(`
 {{- $package := .Package -}}
 {{- $grpcWebPackage := .GrpcWebPackage -}}
-export const map{{ messageName .Message }}ToGrpcWeb = (input?: {{ messageType .Message }}): {{ $grpcWebPackage }}.{{ messageName .Message }} => {
+export const map{{ messageName .Message }}ToGrpcWeb = (input?: {{ messageType .Message }}): {{ $grpcWebPackage }}.{{ messageName .Message }} | undefined => {
+	if (!input) return
 	const result = new {{ $grpcWebPackage }}.{{ messageName .Message }}()
-	if (input) {
 {{- range .Message.Fields }}
-		{{ mapperToGrpcWebAssignMessageField . $package $grpcWebPackage }}
+	{{ mapperToGrpcWebAssignMessageField . $package $grpcWebPackage }}
 {{- end }}
-	}
 	return result
 }
 
@@ -49,11 +48,19 @@ var messageMapperFromGrpcWebTemplate = template.Must(template.New("messageMapper
 {{- $grpcWebPackage := .GrpcWebPackage -}}
 export const map{{ messageName .Message }}FromGrpcWeb = (input?: {{ $grpcWebPackage }}.{{ messageName .Message }}): {{ messageType .Message }} | undefined => {
 	if (!input) return
-	return {
+	const result: {{ messageType .Message }} = {
 {{- range .Message.Fields }}
-		{{ mapperFromGrpcWebAssignMessageField . $package $grpcWebPackage }}
+{{ mapperFromGrpcWebAssignMessageField . $package $grpcWebPackage | indent 8 }}
 {{- end }}
 	}
+{{- range .Message.Fields }}
+{{- with mapperFromGrpcWebAssignMessageFieldSecondary . $package $grpcWebPackage -}}
+{{- if ne . "" }}
+{{ indent 4 . }}
+{{ end -}}
+{{- end -}}
+{{- end }}
+	return result
 }
 
 `))
@@ -70,7 +77,8 @@ var enumMapperMapperToGrpcWebTemplate = template.Must(template.New("enumMapperTo
 	Parse(`
 {{- $package := .Package -}}
 {{- $grpcWebPackage := .GrpcWebPackage -}}
-export const map{{ enumNameWithPrefix .Enum }}ToGrpcWeb = (input?: {{ enumTypeWithPrefix .Enum }}): {{ $grpcWebPackage }}.{{ descriptorGrpcWebPrefix .Enum.Desc }}{{ enumName .Enum }} => {
+export const map{{ enumNameWithPrefix .Enum }}ToGrpcWeb = (input?: {{ enumTypeWithPrefix .Enum }}): {{ $grpcWebPackage }}.{{ descriptorGrpcWebPrefix .Enum.Desc }}{{ enumName .Enum }} | undefined => {
+	if (input === undefined) return
 	switch (input) {
 {{- range .Enum.Values }}
 		{{ mapperToGrpcWebEnumValueCase . $package $grpcWebPackage }}
@@ -92,7 +100,8 @@ var enumMapperMapperFromGrpcWebTemplate = template.Must(template.New("enumMapper
 	Parse(`
 {{- $package := .Package -}}
 {{- $grpcWebPackage := .GrpcWebPackage -}}
-export const map{{ enumNameWithPrefix .Enum }}FromGrpcWeb = (input?: {{ $grpcWebPackage }}.{{ descriptorGrpcWebPrefix .Enum.Desc }}{{ enumName .Enum }}): {{ enumTypeWithPrefix .Enum }} => {
+export const map{{ enumNameWithPrefix .Enum }}FromGrpcWeb = (input?: {{ $grpcWebPackage }}.{{ descriptorGrpcWebPrefix .Enum.Desc }}{{ enumName .Enum }}): {{ enumTypeWithPrefix .Enum }} | undefined => {
+	if (input === undefined) return
 	switch (input) {
 {{- range .Enum.Values }}
 		{{ mapperFromGrpcWebEnumValueCase . $package $grpcWebPackage }}

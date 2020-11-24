@@ -3,10 +3,13 @@
 	build
 	autogen
 
-all: build autogen
+all: build autogen copy-static
 
 build:
 	go build -o /usr/local/bin/protoc-gen-simple-js cmd/protoc-gen-simple-js/main.go
+
+copy-static:
+	cp /Users/tom/repos/github.com/Skedulo/protobuf/static/web/* ./autogen/lang/web
 
 build-protobuf:
 	go build -o /Users/tom/repos/github.com/Skedulo/protobuf/protoc-gen-simple-js cmd/protoc-gen-simple-js/main.go
