@@ -1,7 +1,7 @@
 package mapping_test
 
 import (
-	"github.com/tomwright/grpc-simple-js/internal/mapping"
+	"github.com/tomwright/grpc-simple-ts/internal/mapping"
 	"testing"
 )
 

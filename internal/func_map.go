@@ -2,7 +2,7 @@ package internal
 
 import (
 	"fmt"
-	"github.com/tomwright/grpc-simple-js/internal/mapping"
+	"github.com/tomwright/grpc-simple-ts/internal/mapping"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"strings"

@@ -6,13 +6,13 @@
 all: build autogen copy-static
 
 build:
-	go build -o /usr/local/bin/protoc-gen-simple-js cmd/protoc-gen-simple-js/main.go
+	go build -o /usr/local/bin/protoc-gen-simple-ts cmd/protoc-gen-simple-ts/main.go
 
 copy-static:
 	cp /Users/tom/repos/github.com/Skedulo/protobuf/static/web/* ./autogen/lang/web
 
 build-protobuf:
-	go build -o /Users/tom/repos/github.com/Skedulo/protobuf/protoc-gen-simple-js cmd/protoc-gen-simple-js/main.go
+	go build -o /Users/tom/repos/github.com/Skedulo/protobuf/protoc-gen-simple-ts cmd/protoc-gen-simple-ts/main.go
 
 PROTOC_INCLUDES= -I. \
 	-I/usr/local/include \
@@ -58,7 +58,7 @@ deps-ensure:
 	@type protoc 						1>/dev/null
 	@type protoc-gen-go 				1>/dev/null
 	@type protoc-gen-grpc-gateway 		1>/dev/null
-	@type protoc-gen-simple-js 			1>/dev/null
+	@type protoc-gen-simple-ts 			1>/dev/null
 	@test -d /usr/local/include/google 	1>/dev/null
 	@test make							1>/dev/null
 	@test git							1>/dev/null
@@ -88,7 +88,7 @@ autogen: deps-ensure clean gen-lang-web
 #	rm -rf autogen
 #	mkdir -p autogen
 #	protoc ${PROTOC_INCLUDES} \
-#		--simple-js_out="./autogen" \
+#		--simple-ts_out="./autogen" \
 #		${SORTED_PROTO_FILES}
 
 gen-lang-web:
@@ -97,7 +97,7 @@ gen-lang-web:
 	protoc ${PROTOC_INCLUDES} \
 		--js_out="import_style=commonjs,binary:./autogen/lang/web" \
 		--grpc-web_out="import_style=commonjs+dts,mode=grpcwebtext:./autogen/lang/web" \
-		--simple-js_out="./autogen/lang/web" \
+		--simple-ts_out="./autogen/lang/web" \
 		${SORTED_PROTO_FILES}
 	find autogen/lang/web -type f \( -name "*.js" -o -name "*.ts" \) -exec sed -i '' '/google_api_annotations_pb/d' {} +
 	find autogen/lang/web -type f -exec sed -i '' 's@../src/@@g' {} +

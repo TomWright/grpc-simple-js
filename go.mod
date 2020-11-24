@@ -1,4 +1,4 @@
-module github.com/tomwright/grpc-simple-js
+module github.com/tomwright/grpc-simple-ts
 
 go 1.15
 
