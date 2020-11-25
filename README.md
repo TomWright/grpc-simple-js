@@ -7,7 +7,7 @@ A simple wrapper around [grpc-web](https://github.com/grpc/grpc-web) that mainta
 ```
 go get -v -ldflags="-s -w" \
 		github.com/golang/protobuf/protoc-gen-go \
-		github.com/tomwright/grpc-simple-js/cmd/protoc-gen-simple-js@${GO_VERSION_LOCK_SIMPLE_JS} \
+		github.com/tomwright/grpc-simple-ts/cmd/protoc-gen-simple-js@${GO_VERSION_LOCK_SIMPLE_TS} \
 		2>&1
 
 protoc \
