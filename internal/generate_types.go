@@ -22,7 +22,7 @@ var messageTemplate = template.Must(template.New("message").
 	Funcs(defaultFuncMap.toMap()).
 	Parse(`
 {{- $package := .Package -}}
-export type {{ .Prefix }}{{ messageName .Message }} = {
+export interface {{ .Prefix }}{{ messageName .Message }} {
 {{- range .Message.Fields }}
     {{ fieldName . }}?: {{ fieldType . $package }},
 {{- end }}
