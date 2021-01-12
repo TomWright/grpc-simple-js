@@ -109,23 +109,23 @@ func (fm *funcMap) mapperToGrpcWebAssignMessageField(f *protogen.Field, pkg stri
 	newValue := fmt.Sprintf("input.%s", fieldName)
 	wrapCheckValue := fmt.Sprintf("input?.%s", fieldName)
 
+	mapperPkg := mapping.FieldTypeDescriptorPackage(f.Desc, "mappers")
+	if mapperPkg != "" && mapperPkg != pkg {
+		// log.Println(mapperPkg, pkg)
+		mapperPkg = mapping.PkgToImportPkg(mapperPkg) + "."
+	} else {
+		mapperPkg = ""
+	}
+	typePkg := mapping.FieldTypeDescriptorPackage(f.Desc, "types")
+	if typePkg != "" && typePkg != pkg {
+		// log.Println(typePkg, pkg)
+		typePkg = mapping.PkgToImportPkg(typePkg) + "."
+	} else {
+		typePkg = ""
+	}
+
 	switch f.Desc.Kind() {
 	case protoreflect.MessageKind:
-		mapperPkg := mapping.FieldTypeDescriptorPackage(f.Desc, "mappers")
-		if mapperPkg != "" && mapperPkg != pkg {
-			// log.Println(mapperPkg, pkg)
-			mapperPkg = mapping.PkgToImportPkg(mapperPkg) + "."
-		} else {
-			mapperPkg = ""
-		}
-		typePkg := mapping.FieldTypeDescriptorPackage(f.Desc, "types")
-		if typePkg != "" && typePkg != pkg {
-			// log.Println(typePkg, pkg)
-			typePkg = mapping.PkgToImportPkg(typePkg) + "."
-		} else {
-			typePkg = ""
-		}
-
 		if f.Desc.IsMap() {
 			mapGetter := fmt.Sprintf("get%sMap", strings.Title(fieldName))
 			res := fmt.Sprintf("input.%s.forEach(x => { result.%s().set(x.key, %smap%sToGrpcWeb(x.value)) })", fieldName, mapGetter, mapperPkg, mapping.FieldDescriptorTypePlain(f.Desc.MapValue(), pkg))
@@ -143,7 +143,7 @@ func (fm *funcMap) mapperToGrpcWebAssignMessageField(f *protogen.Field, pkg stri
 			return fmt.Sprintf("const %s = %s;\n    if (%s !== undefined) result.%s(%s)", tmpFieldName, newValue, tmpFieldName, setterName, tmpFieldName)
 		}
 	case protoreflect.EnumKind:
-		newValue = fmt.Sprintf("map%sToGrpcWeb(input?.%s)", mapping.FieldTypePlain(f, pkg), fieldName)
+		newValue = fmt.Sprintf("%smap%sToGrpcWeb(input?.%s)", mapperPkg, mapping.FieldTypePlain(f, pkg), fieldName)
 		return fmt.Sprintf("const %s = %s;\n    if (%s !== undefined) result.%s(%s)", tmpFieldName, newValue, tmpFieldName, setterName, tmpFieldName)
 	}
 
