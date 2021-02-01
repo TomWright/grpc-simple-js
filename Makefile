@@ -6,10 +6,10 @@
 all: build autogen copy-static
 
 build:
-	go build -o /usr/local/bin/protoc-gen-simple-ts cmd/protoc-gen-simple-ts/main.go
+	go build -o /Users/tom/go/bin/protoc-gen-simple-ts cmd/protoc-gen-simple-ts/main.go
 
 copy-static:
-	cp /Users/tom/repos/github.com/Skedulo/protobuf/static/web/* ./autogen/lang/web
+	cp -R /Users/tom/repos/github.com/Skedulo/protobuf/static/web/* ./autogen/lang/web/
 
 build-protobuf:
 	go build -o /Users/tom/repos/github.com/Skedulo/protobuf/protoc-gen-simple-ts cmd/protoc-gen-simple-ts/main.go

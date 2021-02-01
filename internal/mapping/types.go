@@ -71,14 +71,25 @@ func formatFieldType(pkg string, currentPkg string, descriptor protoreflect.Desc
 	return name
 }
 
+func FieldTypeImportReference(currentPkg string, f protoreflect.FieldDescriptor, destPkg string) string {
+	mapperPkg := FieldTypeDescriptorPackage(f, destPkg)
+	if mapperPkg != "" && mapperPkg != currentPkg {
+		mapperPkg = PkgToImportPkg(mapperPkg) + "."
+	} else {
+		mapperPkg = ""
+	}
+	return mapperPkg
+}
+
 func FieldTypeDescriptorPackage(field protoreflect.FieldDescriptor, pkg string) string {
 	switch field.Kind() {
 	case protoreflect.MessageKind:
-		message := field.Message()
-		return DescriptorPackage(message, pkg)
+		// if field.IsMap() {
+		// 	return DescriptorPackage(field.MapValue(), pkg)
+		// }
+		return DescriptorPackage(field.Message(), pkg)
 	case protoreflect.EnumKind:
-		enum := field.Enum()
-		return DescriptorPackage(enum, pkg)
+		return DescriptorPackage(field.Enum(), pkg)
 	default:
 		return ""
 	}
