@@ -1,0 +1,57 @@
+{
+  "name": "@skedulo/protobuf-web",
+  "version": "0.1.0",
+  "description": "Skedulo protobuf for web",
+  "author": "Matthew Rawson <mrawson@skedulo.com>",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Skedulo/protobuf.git"
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "copy:types": "cp -r src dist && find dist -type f ! -name '*.d.ts' -delete",
+    "build:webpack": "export NODE_ENV='production' && npx webpack",
+    "build:declarations": "tsc",
+    "build:declarations:watch": "yarn build:declarations --watch",
+    "build:package": "yarn clean && yarn copy:types && yarn build:webpack && yarn build:declarations",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "skedulo",
+    "protobuf",
+    "grpc",
+    "web"
+  ],
+  "devDependencies": {
+    "babel-loader": "^8.1.0",
+    "@babel/core": "^7.12.3",
+    "@babel/preset-env": "^7.12.1",
+    "@babel/preset-react": "^7.12.5",
+    "@babel/preset-typescript": "^7.12.1",
+    "@babel/plugin-proposal-class-properties": "^7.12.1",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.12.1",
+    "@babel/plugin-proposal-optional-chaining": "^7.12.1",
+    "@babel/plugin-transform-runtime": "^7.12.1",
+    "@types/lodash": "^4.14.162",
+    "@types/react": "^16.9.53",
+    "typescript": "^4.0.3",
+    "webpack": "^4.44.2",
+    "webpack-cli": "^4.2.0",
+    "lodash": "^4.17.20",
+    "react": "^17.0.1",
+    "google-protobuf": "^3.14.0",
+    "grpc": "^1.24.4",
+    "grpc-web": "^1.2.1",
+    "react-async-hook": "^3.6.2"
+  },
+  "peerDependencies": {
+    "google-protobuf": "^3.14.0",
+    "grpc": "^1.24.4",
+    "grpc-web": "^1.2.1"
+  }
+}
