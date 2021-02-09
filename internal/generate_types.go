@@ -51,7 +51,6 @@ export enum {{.Prefix}}{{ enumName .Enum }} {
 func (p *Runner) writeMessages(messages []*protogen.Message, out *protogen.GeneratedFile, currentPkg string) {
 	for _, m := range messages {
 		if m.Desc.IsMapEntry() {
-			log.Println("IsMapEntry", m.Desc.Name())
 			continue
 		}
 
