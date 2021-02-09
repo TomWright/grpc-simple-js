@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"fmt"
 	"github.com/tomwright/grpc-simple-ts/internal/mapping"
 	"google.golang.org/protobuf/compiler/protogen"
@@ -26,7 +27,6 @@ func (fm *funcMap) toMap() template.FuncMap {
 		"fieldType":                           fm.fieldType,
 		"enumValueName":                       fm.enumValueName,
 		"enumValue":                           fm.enumValue,
-		"mapperToGrpcWebAssignMessageField":   fm.mapperToGrpcWebAssignMessageField,
 		"mapperFromGrpcWebAssignMessageField": fm.mapperFromGrpcWebAssignMessageField,
 		"mapperFromGrpcWebAssignMessageFieldSecondary": fm.mapperFromGrpcWebAssignMessageFieldSecondary,
 		"mapperToGrpcWebEnumValueCase":                 fm.mapperToGrpcWebEnumValueCase,
@@ -34,7 +34,38 @@ func (fm *funcMap) toMap() template.FuncMap {
 		"descriptorGrpcWebPrefix":                      fm.descriptorGrpcWebPrefix,
 		"descriptorPrefix":                             fm.descriptorPrefix,
 		"indent":                                       fm.indent,
+
+		// Kinda new
+		"grpcWebPackage": func(ctx context.Context) string {
+			return mapping.GRPCWebPackage(ctx)
+		},
+		"mapperToGrpcWebAssignMessageField":   fm.mapperToGrpcWebAssignMessageField,
+
+		// New
+		"messageToGrpcWebMapperName": fm.messageToGrpcWebMapperName,
+		"messageTypeNew": fm.messageTypeNew,
+		"grpcMessageType": fm.grpcMessageType,
 	}
+}
+
+func (fm *funcMap) messageToGrpcWebMapperName(ctx context.Context, message *protogen.Message) string {
+	return fmt.Sprintf("map%sToGrpcWeb", message.Desc.Name())
+}
+
+func (fm *funcMap) messageTypeNew(ctx context.Context, message *protogen.Message) string {
+	return mapping.MessageType(ctx, message)
+}
+
+func (fm *funcMap) grpcMessageType(ctx context.Context, message *protogen.Message) string {
+	currentPackage := mapping.CurrentPackage(ctx)
+	pkg := mapping.GRPCWebPackage(ctx)
+	if pkg == currentPackage {
+		pkg = ""
+	} else {
+		pkg += "."
+	}
+
+	return fmt.Sprintf("%s%s", pkg, message.Desc.Name())
 }
 
 func (fm *funcMap) indent(num int, in string) string {
@@ -98,12 +129,13 @@ func (fm *funcMap) enumValue(value *protogen.EnumValue) string {
 	return fmt.Sprint(value.Desc.Number())
 }
 
-func (fm *funcMap) mapperToGrpcWebAssignMessageField(f *protogen.Field, pkg string, grpcWebPackage string) string {
-	fieldName := fm.fieldName(f)
-	grpcWebFieldName := fm.grpcWebFieldName(f)
+func (fm *funcMap) mapperToGrpcWebAssignMessageField(ctx context.Context, f *protogen.Field) string {
+	pkg := mapping.CurrentPackage(ctx)
 
-	setterName := "set" + strings.Title(grpcWebFieldName)
-	addName := "add" + strings.Title(strings.ToLower(string(f.Desc.Name())))
+	grpcWebFieldName := mapping.GRPCFormattedFieldName(ctx, f)
+	fieldName := mapping.FieldName(ctx, f)
+	setterName := mapping.GRPCSetterName(ctx, f)
+	addName := mapping.GRPCSetterAddName(ctx, f)
 	tmpFieldName := "tmp" + strings.Title(fieldName)
 
 	newValue := fmt.Sprintf("input.%s", fieldName)

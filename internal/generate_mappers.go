@@ -1,17 +1,18 @@
 package internal
 
 import (
+	"context"
 	"fmt"
 	"github.com/tomwright/grpc-simple-ts/internal/mapping"
+	"github.com/tomwright/grpc-simple-ts/internal/mappingcontext"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"log"
-	"path/filepath"
-	"strings"
 	"text/template"
 )
 
 type messageMapperToGrpcWebTemplateData struct {
+	Context context.Context
 	Message        *protogen.Message
 	Package        string
 	Prefix         string
@@ -21,13 +22,12 @@ type messageMapperToGrpcWebTemplateData struct {
 var messageMapperToGrpcWebTemplate = template.Must(template.New("messageMapperToGrpcWeb").
 	Funcs(defaultFuncMap.toMap()).
 	Parse(`
-{{- $package := .Package -}}
-{{- $grpcWebPackage := .GrpcWebPackage -}}
-export const map{{ messageName .Message }}ToGrpcWeb = (input?: {{ messageType .Message }}): {{ $grpcWebPackage }}.{{ messageName .Message }} | undefined => {
+{{- $ctx := .Context -}}
+export const {{ messageToGrpcWebMapperName $ctx .Message }} = (input?: {{ messageTypeNew $ctx .Message }}): {{ grpcMessageType $ctx .Message }} | undefined => {
 	if (!input) return
-	const result = new {{ $grpcWebPackage }}.{{ messageName .Message }}()
+	const result = new {{ grpcMessageType $ctx .Message }}()
 {{- range .Message.Fields }}
-	{{ mapperToGrpcWebAssignMessageField . $package $grpcWebPackage }}
+	{{ mapperToGrpcWebAssignMessageField $ctx . }}
 {{- end }}
 	return result
 }
@@ -35,6 +35,7 @@ export const map{{ messageName .Message }}ToGrpcWeb = (input?: {{ messageType .M
 `))
 
 type messageMapperFromGrpcWebTemplateData struct {
+	Context context.Context
 	Message        *protogen.Message
 	Package        string
 	Prefix         string
@@ -66,6 +67,7 @@ export const map{{ messageName .Message }}FromGrpcWeb = (input?: {{ $grpcWebPack
 `))
 
 type enumMapperMapperToGrpcWebTemplateData struct {
+	Context context.Context
 	Enum           *protogen.Enum
 	Package        string
 	Prefix         string
@@ -89,6 +91,7 @@ export const map{{ enumNameWithPrefix .Enum }}ToGrpcWeb = (input?: {{ enumTypeWi
 `))
 
 type enumMapperMapperFromGrpcWebTemplateData struct {
+	Context context.Context
 	Enum           *protogen.Enum
 	Package        string
 	Prefix         string
@@ -111,15 +114,21 @@ export const map{{ enumNameWithPrefix .Enum }}FromGrpcWeb = (input?: {{ $grpcWeb
 
 `))
 
-func (p *Runner) writeMessageMappers(messages []*protogen.Message, out *protogen.GeneratedFile, currentPkg string, grpcWebPackage string) {
+func (p *Runner) writeMessageMappers(ctx context.Context, messages []*protogen.Message) {
+	grpcWebPackage := mapping.GRPCWebPackage(ctx)
+	out := mappingcontext.CurrentGeneratedFileFromContext(ctx)
+	currentPkg := mapping.CurrentPackage(ctx)
+
 	for _, m := range messages {
 		dataTo := messageMapperToGrpcWebTemplateData{
+			Context: ctx,
 			Message:        m,
 			Package:        currentPkg,
 			Prefix:         mapping.DescriptorPrefix(m.Desc),
 			GrpcWebPackage: grpcWebPackage,
 		}
 		dataFrom := messageMapperFromGrpcWebTemplateData{
+			Context: ctx,
 			Message:        m,
 			Package:        currentPkg,
 			Prefix:         mapping.DescriptorPrefix(m.Desc),
@@ -134,20 +143,26 @@ func (p *Runner) writeMessageMappers(messages []*protogen.Message, out *protogen
 			}
 		}
 
-		p.writeMessageMappers(m.Messages, out, currentPkg, grpcWebPackage)
-		p.writeEnumMappers(m.Enums, out, currentPkg, grpcWebPackage)
+		p.writeMessageMappers(ctx, m.Messages)
+		p.writeEnumMappers(ctx, m.Enums)
 	}
 }
 
-func (p *Runner) writeEnumMappers(enums []*protogen.Enum, out *protogen.GeneratedFile, currentPkg string, grpcWebPackage string) {
+func (p *Runner) writeEnumMappers(ctx context.Context, enums []*protogen.Enum) {
+	grpcWebPackage := mapping.GRPCWebPackage(ctx)
+	out := mappingcontext.CurrentGeneratedFileFromContext(ctx)
+	currentPkg := mapping.CurrentPackage(ctx)
+
 	for _, m := range enums {
 		dataTo := enumMapperMapperToGrpcWebTemplateData{
+			Context: ctx,
 			Enum:           m,
 			Package:        currentPkg,
 			Prefix:         mapping.DescriptorPrefix(m.Desc),
 			GrpcWebPackage: grpcWebPackage,
 		}
 		dataFrom := enumMapperMapperFromGrpcWebTemplateData{
+			Context: ctx,
 			Enum:           m,
 			Package:        currentPkg,
 			Prefix:         mapping.DescriptorPrefix(m.Desc),
@@ -163,32 +178,31 @@ func (p *Runner) writeEnumMappers(enums []*protogen.Enum, out *protogen.Generate
 }
 
 func (p *Runner) generateMappers(plugin *protogen.Plugin) error {
-	for _, f := range plugin.Files {
-		// Create the output file
-		outputDir := filepath.Dir(f.Desc.Path())
+	ctx := context.Background()
 
-		fileName := strings.TrimSuffix(filepath.Base(f.Desc.Path()), filepath.Ext(f.Desc.Path()))
-		grpcWebPackage := fileName + "_pb"
-		outputFile := fileName + "_mappers_sjs.ts"
-		outputPath := fmt.Sprintf("%s/%s", outputDir, outputFile)
-		out := plugin.NewGeneratedFile(outputPath, "")
+	for _, f := range plugin.Files {
+		ctx := mappingcontext.ContextWithCurrentFile(ctx, f)
+		ctx = mappingcontext.ContextWithCurrentFileExtension(ctx, "_mappers_sjs.ts")
+		ctx = mappingcontext.ContextWithCurrentPackage(ctx, "mappers")
+
+		out := plugin.NewGeneratedFile(mapping.OutputFilepath(ctx), "")
+		ctx = mappingcontext.ContextWithCurrentGeneratedFile(ctx, out)
 
 		_, _ = out.Write([]byte(`// File auto-generated by protoc-gen-simple-ts
 `))
 
-		currentPackage := mapping.DescriptorPackage(f.Desc, "mappers")
-		if err := p.generateMappersImports(f, out, outputPath, grpcWebPackage, currentPackage); err != nil {
+		if err := p.generateMappersImports(ctx); err != nil {
 			log.Fatalf("could not add required imports: %s", err)
 		}
-		p.writeMessageMappers(f.Messages, out, currentPackage, grpcWebPackage)
-		p.writeEnumMappers(f.Enums, out, currentPackage, grpcWebPackage)
+		p.writeMessageMappers(ctx, f.Messages)
+		p.writeEnumMappers(ctx, f.Enums)
 
 	}
 
 	return nil
 }
 
-func (p *Runner) generateMappersImports(f *protogen.File, out *protogen.GeneratedFile, currentPath string, grpcWebPackage string, currentPackage string) error {
+func (p *Runner) generateMappersImports(ctx context.Context) error {
 	// required is a list of required paths to import
 	required := make([]*requiredImport, 0)
 	addRequired := func(descriptor protoreflect.Descriptor) {
@@ -210,6 +224,8 @@ func (p *Runner) generateMappersImports(f *protogen.File, out *protogen.Generate
 			}
 		}
 
+		currentPath := mapping.OutputFilepath(ctx)
+
 		r := &requiredImport{
 			FileDesc:     requiredFile,
 			ImportName:   mapping.PkgToImportPkg(mapping.DescriptorPackage(requiredFile, "types")),
@@ -225,17 +241,18 @@ func (p *Runner) generateMappersImports(f *protogen.File, out *protogen.Generate
 			required = append(required, r)
 		}
 		if rMapper.RelativePath != "" {
-			// log.Println(currentPath, currentPackage, rMapper.RelativePath, requiredFile.Path())
 			required = append(required, rMapper)
 		}
 	}
+
+	grpcWebPackage := mapping.GRPCWebPackage(ctx)
 
 	required = append(required, &requiredImport{
 		ImportName:   grpcWebPackage,
 		RelativePath: "./" + grpcWebPackage,
 	})
 
-	for _, m := range f.Messages {
+	for _, m := range mappingcontext.CurrentFileFromContext(ctx).Messages {
 		addRequired(m.Desc)
 		for _, f := range m.Fields {
 			switch f.Desc.Kind() {
@@ -249,7 +266,7 @@ func (p *Runner) generateMappersImports(f *protogen.File, out *protogen.Generate
 		}
 	}
 
-	if err := importsTemplate.Execute(out, required); err != nil {
+	if err := importsTemplate.Execute(mappingcontext.CurrentGeneratedFileFromContext(ctx), required); err != nil {
 		return fmt.Errorf("could not execute imports template: %w", err)
 	}
 
