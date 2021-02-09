@@ -132,7 +132,14 @@ func FieldDescriptorTypePlain(field protoreflect.FieldDescriptor, pkg string) st
 }
 
 func FieldType(field *protogen.Field, pkg string) string {
-	return FieldDescriptorType(field.Desc, pkg, true)
+	if field.Desc.IsMap() {
+
+		keyType := FieldDescriptorType(field.Desc.MapKey(), pkg, false)
+		valType := FieldDescriptorType(field.Desc.MapValue(), pkg, false)
+		return fmt.Sprintf("Map<%s, %s>", keyType, valType)
+	} else {
+		return FieldDescriptorType(field.Desc, pkg, true)
+	}
 }
 
 func FieldTypeNoCardinality(field *protogen.Field, pkg string) string {
