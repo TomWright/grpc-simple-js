@@ -17,7 +17,9 @@ type funcMap struct {
 func (fm *funcMap) toMap() template.FuncMap {
 	return template.FuncMap{
 		"messageName":                         fm.messageName,
+		"messageNameWithPrefix":                         fm.messageNameWithPrefix,
 		"messageType":                         fm.messageType,
+		"messageTypeWithPrefix":                         fm.messageTypeWithPrefix,
 		"enumName":                            fm.enumName,
 		"enumNameWithPrefix":                  fm.enumNameWithPrefix,
 		"enumType":                            fm.enumType,
@@ -45,7 +47,19 @@ func (fm *funcMap) indent(num int, in string) string {
 }
 
 func (fm *funcMap) messageName(message *protogen.Message) string {
-	return string(message.Desc.Name())
+	messageName := string(message.Desc.Name())
+	// if message.Desc.Parent() != nil {
+	// 	messageName = messageName + "_" + string(message.Desc.Parent().Name())
+	// }
+	return messageName
+}
+
+func (fm *funcMap) messageNameWithPrefix(msg *protogen.Message) string {
+	return mapping.DescriptorPrefix(msg.Desc) + string(msg.Desc.Name())
+}
+
+func (fm *funcMap) messageTypeWithPrefix(msg *protogen.Message) string {
+	return fmt.Sprintf("%s.%s%s", mapping.PkgToImportPkg(mapping.DescriptorPackage(msg.Desc, "types")), mapping.DescriptorPrefix(msg.Desc), string(msg.Desc.Name()))
 }
 
 func (fm *funcMap) messageType(message *protogen.Message) string {

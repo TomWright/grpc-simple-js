@@ -23,9 +23,9 @@ var messageMapperToGrpcWebTemplate = template.Must(template.New("messageMapperTo
 	Parse(`
 {{- $package := .Package -}}
 {{- $grpcWebPackage := .GrpcWebPackage -}}
-export const map{{ messageName .Message }}ToGrpcWeb = (input?: {{ messageType .Message }}): {{ $grpcWebPackage }}.{{ messageName .Message }} | undefined => {
+export const map{{ messageNameWithPrefix .Message }}ToGrpcWeb = (input?: {{ messageTypeWithPrefix .Message }}): {{ $grpcWebPackage }}.{{ descriptorGrpcWebPrefix .Message.Desc }}{{ messageName .Message }} | undefined => {
 	if (!input) return
-	const result = new {{ $grpcWebPackage }}.{{ messageName .Message }}()
+	const result = new {{ $grpcWebPackage }}.{{ descriptorGrpcWebPrefix .Message.Desc }}{{ messageName .Message }}()
 {{- range .Message.Fields }}
 	{{ mapperToGrpcWebAssignMessageField . $package $grpcWebPackage }}
 {{- end }}
@@ -46,9 +46,9 @@ var messageMapperFromGrpcWebTemplate = template.Must(template.New("messageMapper
 	Parse(`
 {{- $package := .Package -}}
 {{- $grpcWebPackage := .GrpcWebPackage -}}
-export const map{{ messageName .Message }}FromGrpcWeb = (input?: {{ $grpcWebPackage }}.{{ messageName .Message }}): {{ messageType .Message }} | undefined => {
+export const map{{ messageNameWithPrefix .Message }}FromGrpcWeb = (input?: {{ $grpcWebPackage }}.{{ descriptorGrpcWebPrefix .Message.Desc }}{{ messageName .Message }}): {{ messageTypeWithPrefix .Message }} | undefined => {
 	if (!input) return
-	const result: {{ messageType .Message }} = {
+	const result: {{ messageTypeWithPrefix .Message }} = {
 {{- range .Message.Fields }}
 {{ mapperFromGrpcWebAssignMessageField . $package $grpcWebPackage | indent 8 }}
 {{- end }}
