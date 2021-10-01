@@ -147,8 +147,19 @@ func (fm *funcMap) mapperToGrpcWebAssignMessageField(f *protogen.Field, pkg stri
 			return fmt.Sprintf("const %s = %s;\n    if (%s !== undefined) result.%s(%s)", tmpFieldName, newValue, tmpFieldName, setterName, tmpFieldName)
 		}
 	case protoreflect.EnumKind:
-		newValue = fmt.Sprintf("%smap%sToGrpcWeb(input?.%s)", mapperPkg, mapping.FieldTypePlain(f, pkg), fieldName)
-		return fmt.Sprintf("const %s = %s;\n    if (%s !== undefined) result.%s(%s)", tmpFieldName, newValue, tmpFieldName, setterName, tmpFieldName)
+		if f.Desc.Cardinality() == protoreflect.Repeated {
+			fieldTypePlain := mapping.FieldTypePlain(f, pkg)
+
+			return fmt.Sprintf(`if (input?.%s !== undefined) {
+		input.%s.forEach((x: %s%s, _: number) => {
+			const singleRecord = %smap%sToGrpcWeb(x)
+			if (singleRecord !== undefined) result.%s(singleRecord)
+		})
+    }`, fieldName, fieldName, typePkg, fieldTypePlain, mapperPkg, fieldTypePlain, addName)
+		} else {
+			newValue = fmt.Sprintf("%smap%sToGrpcWeb(input?.%s)", mapperPkg, mapping.FieldTypePlain(f, pkg), fieldName)
+			return fmt.Sprintf("const %s = %s;\n    if (%s !== undefined) result.%s(%s)", tmpFieldName, newValue, tmpFieldName, setterName, tmpFieldName)
+		}
 	}
 
 	return fmt.Sprintf("if (%s !== undefined) result.%s(%s)", wrapCheckValue, setterName, newValue)

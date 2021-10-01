@@ -16,9 +16,9 @@ build-protobuf:
 
 PROTOC_INCLUDES= -I. \
 	-I/usr/local/include \
-	-I${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
-	-I${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway \
-	-I/Users/tom/repos/github.com/Skedulo/protobuf
+	-I/Users/tom/repos/github.com/Skedulo/protobuf/src \
+	-I/Users/tom/repos/github.com/Skedulo/protobuf/thirdparty/grpc-gateway/third_party/googleapis \
+	-I/Users/tom/repos/github.com/Skedulo/protobuf/thirdparty/grpc-gateway
 
 SHELL := /usr/bin/env bash
 
@@ -93,13 +93,15 @@ autogen: deps-ensure clean gen-lang-web
 
 gen-lang-web:
 	rm -rf autogen/lang/web
-	mkdir -p autogen/lang/web/
+	mkdir -p autogen/lang/web/src
 	protoc ${PROTOC_INCLUDES} \
-		--js_out="import_style=commonjs,binary:./autogen/lang/web" \
-		--grpc-web_out="import_style=commonjs+dts,mode=grpcwebtext:./autogen/lang/web" \
-		--simple-ts_out="./autogen/lang/web" \
+		--js_out="import_style=commonjs,binary:./autogen/lang/web/src" \
+		--grpc-web_out="import_style=commonjs+dts,mode=grpcwebtext:./autogen/lang/web/src" \
+		--simple-ts_out="./autogen/lang/web/src" \
 		${SORTED_PROTO_FILES}
-	find autogen/lang/web -type f \( -name "*.js" -o -name "*.ts" \) -exec sed -i '' '/google_api_annotations_pb/d' {} +
-	find autogen/lang/web -type f -exec sed -i '' 's@../src/@@g' {} +
-#	cp static/web/{package.json,tsconfig.json,webpack.config.js} autogen/lang/web
-#	cp static/web/index.ts autogen/lang/web/src
+	find autogen/lang/web/src -type f \( -name "*.js" -o -name "*.ts" \) -exec sed -i '' '/swagger_options_annotations_pb/d' {} +
+	find autogen/lang/web/src -type f \( -name "*.js" -o -name "*.ts" \) -exec sed -i '' '/google_api_annotations_pb/d' {} +
+
+	cp -R /Users/tom/repos/github.com/Skedulo/protobuf/static/web/. autogen/lang/web/
+	rm -rf autogen/lang/web/src/protoc-gen-swagger
+	rm -rf autogen/lang/web/src/google
